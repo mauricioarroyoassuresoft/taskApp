@@ -94,3 +94,98 @@ const fakeApi = {
     return ok;
   },
 };
+
+
+//ui methods
+const tasksContainer = document.getElementById("tasksContainer");
+const taskForm = document.getElementById("taskForm");
+const titleInput = document.getElementById("title");
+const descriptionInput = document.getElementById("description");
+
+async function renderTasks() {
+  tasksContainer.innerHTML = "";
+  try {
+    const tasks = await fakeApi.getAll();
+    if (!tasks.length) {
+      const empty = document.createElement("li");
+      empty.textContent = "No tasks available.";
+      tasksContainer.appendChild(empty);
+      return;
+    }
+
+    tasks.forEach((task) => {
+      const li = document.createElement("li");
+      li.className = task.isCompleted ? "completed" : "";
+      li.dataset.id = task.id;
+
+      const left = document.createElement("div");
+      left.className = "task-left";
+      const titleEl = document.createElement("strong");
+      titleEl.textContent = task.title;
+      const descEl = document.createElement("div");
+      descEl.className = "task-desc";
+      descEl.textContent = task.description || "";
+      left.appendChild(titleEl);
+      left.appendChild(descEl);
+
+      const right = document.createElement("div");
+      right.className = "task-buttons";
+
+      const completeBtn = document.createElement("button");
+      completeBtn.className = "complete-btn";
+      completeBtn.textContent = task.isCompleted ? "Undo" : "Complete";
+      completeBtn.addEventListener("click", async () => {
+        try {
+          await fakeApi.update(task.id);
+          await renderTasks();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "delete-btn";
+      deleteBtn.textContent = "X";
+      deleteBtn.addEventListener("click", async () => {
+        try {
+          await fakeApi.delete(task.id);
+          await renderTasks();
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      right.appendChild(completeBtn);
+      right.appendChild(deleteBtn);
+
+      li.appendChild(left);
+      li.appendChild(right);
+      tasksContainer.appendChild(li);
+    });
+  } catch (err) {
+    console.error("Error rendering tasks:", err);
+    const errLi = document.createElement("li");
+    errLi.textContent = "Error loading tasks.";
+    tasksContainer.appendChild(errLi);
+  }
+}
+
+taskForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = titleInput.value.trim();
+  const description = descriptionInput.value.trim();
+  if (!title) return;
+  try {
+    await fakeApi.post({ title, description });
+    titleInput.value = "";
+    descriptionInput.value = "";
+    await renderTasks();
+  } catch (err) {
+    console.error("Create task failed:", err);
+  }
+});
+
+(async function initApp() {
+  await fakeApi.init();
+  await renderTasks();
+})();
