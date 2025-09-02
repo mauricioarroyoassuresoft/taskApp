@@ -58,3 +58,39 @@ class TaskManager {
     return true;
   }
 }
+
+
+//api
+const fakeApi = {
+  _taskManager: new TaskManager(),
+
+  async init() {
+    await this._taskManager.fetchTags("tasks.json");
+  },
+
+  async post({ title, description }) {
+    if (!title || !title.trim()) {
+      return Promise.reject(new Error("Title is required"));
+    }
+    const task = this._taskManager.create(
+      title.trim(),
+      (description || "").trim()
+    );
+    return task;
+  },
+
+  async getAll() {
+    const tasks = this._taskManager.getAll();
+    return tasks;
+  },
+
+  async update(id) {
+    const task = this._taskManager.toggleCompleteTask(id);
+    return task;
+  },
+
+  async delete(id) {
+    const ok = this._taskManager.delete(id);
+    return ok;
+  },
+};
